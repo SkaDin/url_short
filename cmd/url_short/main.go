@@ -4,8 +4,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"log/slog"
+	"net/http"
 	"os"
 	"url_short/internal/config"
+	"url_short/internal/http-server/handlers/url/save"
 	mv "url_short/internal/http-server/middleware/logger"
 	"url_short/internal/lib/logger/handlers/slogpretty"
 	"url_short/internal/lib/logger/sl"
@@ -25,8 +27,6 @@ func main() {
 
 	log.Info("starting url_short", slog.String("env", cfg.Env))
 	log.Debug("debug messages are enabled")
-	log.Error("error")
-	log.Warn("warn")
 
 	storage, err := sqlite.New(cfg.StoragePath)
 	_ = storage
@@ -39,10 +39,27 @@ func main() {
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
-	//router.Use(middleware.Logger)
 	router.Use(mv.New(log))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
+
+	router.Post("/url", save.New(log, storage))
+
+	log.Info("starting server", slog.String("address", cfg.Address))
+
+	srv := &http.Server{
+		Addr:         cfg.Address,
+		Handler:      router,
+		ReadTimeout:  cfg.HTTPServer.Timeout,
+		WriteTimeout: cfg.HTTPServer.Timeout,
+		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+	}
+
+	if err := srv.ListenAndServe(); err != nil {
+		log.Error("failed to start server")
+	}
+
+	log.Error("server stopped")
 }
 
 func setupLogger(env string) *slog.Logger {
