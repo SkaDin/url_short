@@ -54,10 +54,10 @@ func TestSaveHandler(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		tc := tc
+		tc := tc // every test use self case
 
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			t.Parallel() // parallels test
 			urlSaverMock := mocks.NewURLSaver(t)
 			if tc.respError == "" || tc.mockError != nil {
 				urlSaverMock.On("SaveURL", tc.url, mock.AnythingOfType("string")).
