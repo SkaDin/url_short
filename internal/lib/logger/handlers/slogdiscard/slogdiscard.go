@@ -18,7 +18,6 @@ func NewDiscardHandler() *DiscardHandler {
 func (h *DiscardHandler) Handle(_ context.Context, _ slog.Record) error {
 	return nil
 }
-
 func (h *DiscardHandler) WithAttrs(_ []slog.Attr) slog.Handler {
 	return h
 }

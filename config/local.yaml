@@ -1,6 +1,8 @@
 env: "local"
-storage_path: "/home/fames/Dev/GO/url_short/storage/storage.db"
+storage_path: "/home/skadi/Dev/Go/url_short/storage/storage.db"
 http_server:
   address: "localhost:8080"
   timeout: 4s
   idle_timeout: 60s
+  user: "denis"
+  password: "chort123"
