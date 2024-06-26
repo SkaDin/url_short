@@ -55,6 +55,7 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			var validateErr validator.ValidationErrors
 
 			errors.As(err, &validateErr)
+			//validateErr := err.(validator.ValidationErrors)
 			log.Error("invalid request", sl.Err(err))
 
 			//render.JSON(w, r, resp.Error("invalid request"))
@@ -67,15 +68,15 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		if alias == "" {
 			alias = random.NewRandomString(aliasLength)
 		}
+
 		id, err := urlSaver.SaveURL(req.URL, alias)
-		if errors.Is(err, storage.ErrURLIsExists) {
+		if errors.Is(err, storage.ErrURLExists) {
 			log.Info("url already exists", slog.String("url", req.URL))
 
 			render.JSON(w, r, resp.Error("url already exists"))
 
 			return
 		}
-
 		if err != nil {
 			log.Error("failed to add url", sl.Err(err))
 
