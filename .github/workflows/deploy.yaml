@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       HOST: fames@176.109.111.221
-      DEPLOY_DIRECTORY: /root/apps/url_short
-      CONFIG_PATH: /root/apps/url_short/config/prod.yaml
-      ENV_FILE_PATH: /root/apps/url_short/config.env
+      DEPLOY_DIRECTORY: /fames/apps/url_short
+      CONFIG_PATH: /fames/apps/url_short/config/prod.yaml
+      ENV_FILE_PATH: /fames/apps/url_short/config.env
 
     steps:
       - name: Checkout repository
