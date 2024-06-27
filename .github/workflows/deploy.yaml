@@ -10,7 +10,7 @@ jobs:
   deploy:
     runs-on: ubuntu-22.04
     env:
-      HOST: fames@176.109.111.221
+      HOST: denis@87.242.100.109
       DEPLOY_DIRECTORY: /root/apps/url_short
       CONFIG_PATH: /root/apps/url_short/config/prod.yaml
       ENV_FILE_PATH: /root/apps/url_short/config.env
