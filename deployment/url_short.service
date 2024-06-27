@@ -1,0 +1,15 @@
+[Unit]
+Description=Url Short
+After=network.target
+
+[Service]
+User=denis
+WorkingDirectory=/denis/apps/url_short
+ExecStart=/denis/apps/url-short/url_short
+Restart=always
+RestartSec=4
+StandardOutput=inherit
+EnvironmentFile=/denis/apps/url_short/config.env
+
+[Install]
+WantedBy=multi-user.target

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"url_short/internal/config"
+	"url_short/internal/http-server/handlers/redirect"
+	"url_short/internal/http-server/handlers/removed"
 	"url_short/internal/http-server/handlers/url/save"
 	mv "url_short/internal/http-server/middleware/logger"
 	"url_short/internal/lib/logger/handlers/slogpretty"
@@ -26,7 +28,6 @@ func main() {
 	log := setupLogger(cfg.Env)
 
 	log.Info("starting url_short", slog.String("env", cfg.Env))
-	log.Debug("debug messages are enabled")
 
 	storage, err := sqlite.New(cfg.StoragePath)
 	_ = storage
@@ -39,11 +40,20 @@ func main() {
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
+	//router.Use(middleware.Logger)
 	router.Use(mv.New(log))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Post("/url", save.New(log, storage))
+	router.Route("/url", func(r chi.Router) {
+		r.Use(middleware.BasicAuth("url-short", map[string]string{
+			cfg.HTTPServer.User: cfg.HTTPServer.Password,
+		}))
+		r.Post("/", save.New(log, storage))
+		r.Delete("/{alias}", removed.New(log, storage))
+	})
+
+	router.Get("/{alias}", redirect.New(log, storage))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 

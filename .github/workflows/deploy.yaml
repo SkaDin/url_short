@@ -1,0 +1,67 @@
+name: Deploy App
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to deploy'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    env:
+      HOST: fames@176.109.111.221
+      DEPLOY_DIRECTORY: /root/apps/url_short
+      CONFIG_PATH: /root/apps/url_short/config/prod.yaml
+      ENV_FILE_PATH: /root/apps/url_short/config.env
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.tag }}
+      - name: Check if tag exists
+        run: |
+          git fetch --all --tags
+          if ! git tag | grep -q "^${{ github.event.inputs.tag }}$"; then
+            echo "error: Tag '${{ github.event.inputs.tag }}' not found"
+            exit 1
+          fi
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.22.4
+      - name: Build app
+        run: |
+          go mod download
+          go build -o url_short ./cmd/url_short
+      - name: Deploy to VM
+        run: |
+          sudo apt-get install -y ssh rsync
+          echo "$DEPLOY_SSH_KEY" > deploy_key.pem
+          chmod 600 deploy_key.pem
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no ${{ env.HOST }} "mkdir -p ${{ env.DELOY_DIRECTORY }}"
+          rsync -avz -3 'ssh -i deploy_key.pem -o StrictHostKeyCheckin=no' --exclude='.git' ./ ${{ env.HOST }}:${{ env.DEPLOY_DIRECTORY }}
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      - name: Remove old systemd service file
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyCheckin=no ${{ env.HOST }} "rm -f /etc/systemd/system/url_short.service"
+      - name: List workspace contents
+        run: |
+          echo "Listing deployment folder contents:"
+          ls -la ${{ github.workspace }}/deployment
+      - name: Create enviroment file on server
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no ${{ env.HOST }} "\
+          touch ${{ env.ENV_FILE_PATH }} && \
+          chmod 600 ${{ env.ENV_FILE_PATH }} && \
+          echo 'CONFIG_PATH=${{ env.CONFIG_PATH }}' > ${{ env.ENV_FILE_PATH }} && \
+          echo 'HTTP_SERVER_PASSWORD=${{ secrets.AUTH_PASS }}' >> ${{ env.ENV_FILE_PATH }}"
+      - name: Copy systemd service file
+        run: |
+          scp -i deploy_key.pem -o StrictHostKeyCheckin=no ${{ github.workspace }}/deployment/url_short.service ${{ env.HOST }}:/tmp/url_short.service
+          ssh -i deploy_key.pem -StrictHostKeyCheckin=no ${{ env.HOST }} "mv /tmp/url_short.service /etc/systemd/system/url_short.service
+      - name: Start application
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyCheckin=no ${{ env.HOST }} "systemctl deamon-reload && systemctl restart url_short.service
