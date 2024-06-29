@@ -27,7 +27,7 @@ func TestSaveHandler(t *testing.T) {
 		{
 			name:  "Success_two",
 			alias: "something_alias",
-			url:   "http://www.google.com",
+			url:   "https://www.google.com",
 		},
 		{
 			name:  "Success_three",

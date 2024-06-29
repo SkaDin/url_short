@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"log/slog"
@@ -13,7 +14,7 @@ import (
 	mv "url_short/internal/http-server/middleware/logger"
 	"url_short/internal/lib/logger/handlers/slogpretty"
 	"url_short/internal/lib/logger/sl"
-	"url_short/internal/storage/sqlite"
+	"url_short/internal/storage/postgres"
 )
 
 const (
@@ -24,13 +25,17 @@ const (
 
 func main() {
 	cfg := config.MustLoad()
-
+	ctx := context.Background()
 	log := setupLogger(cfg.Env)
 
-	log.Info("starting url_short", slog.String("env", cfg.Env))
+	log.Info(
+		"starting url_short",
+		slog.String("env", cfg.Env),
+		slog.String("version", "1.0"),
+	)
 
-	storage, err := sqlite.New(cfg.StoragePath)
-	_ = storage
+	//storage, err := sqlite.New(cfg.StoragePath) // sqlite3
+	storage, err := postgres.New(ctx, cfg.StoragePath) // postgres
 	if err != nil {
 		log.Error("failed to init storage", sl.Err(err))
 		os.Exit(1)
@@ -40,7 +45,6 @@ func main() {
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
-	//router.Use(middleware.Logger)
 	router.Use(mv.New(log))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
